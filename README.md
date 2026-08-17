@@ -36,6 +36,8 @@ Project-scoped instead of user-scoped: use `.claude/skills/` inside the repo.
 
 `web-ui-design` and `mobile-ui-design` encode my personal taste, not a neutral style guide. Fork and edit the tokens rather than expecting them to match your brand.
 
+`mobile-ui-design` previously lived in its own repo (`Sumyabazar00/mobile-ui-design`), now archived — this repo is its home.
+
 ## License
 
 MIT
