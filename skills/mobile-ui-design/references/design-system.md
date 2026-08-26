@@ -18,10 +18,18 @@ Fixed-context exceptions (legitimate literals, but centralize repeats):
 ## Type scale
 
 One named scale → `MaterialTheme.typography`. Font is per-app (insure: **Roboto Condensed**, MN Cyrillic + Latin). Steps (semantic → slot → size/weight):
-Display `displayLarge` 32/700 · H1 `headlineLarge` 24/700 · H2 `headlineMedium` 20/600 · Title `titleLarge` 17/600 · Body `bodyLarge` 17/400 · Body-sm `bodyMedium` 15/400 · Label `labelLarge` 15/600 · Caption `bodySmall` 12/400. **No inline `.sp`.**
+Display `displayLarge` 32/700 · H1 `headlineLarge` 24/700 · H2 `headlineMedium` 20/600 · Title `titleLarge` 17/600 · Body `bodyLarge` 17/400 · Body-sm `bodyMedium` 15/400 · Label `labelLarge` 15/600 · Caption `bodySmall` 12/400. **No inline `.sp`.** Pick from the scale, never between two steps.
+
+**Line height per step — set it, don't inherit a default.** insure's are fixed by `MOBILE_DESIGN_BRIEF` §3.2 and that table is authoritative over anything here:
+Display 32→40 · H1 24→32 · H2 20→28 · H3/Title 17→24 · Body-lg 17→24 · Body 15→22 · Body-sm 13→18 · Caption 12→16 · CTA 17→22 · Mono 14→20.
+Compose takes the **total** (`lineHeight = 40.sp`); SwiftUI `.lineSpacing()` takes the **difference** (`40 − 32 = 8`). Wire it into the scale itself so call sites can't forget.
+
+Note the tension with Rule 3: the brief's headings sit at 1.25–1.4, not the 1.1–1.2 the rule asks for. For a *new* app, follow the rule. For insure, the brief wins until it is deliberately revised — a skill update is not the place to change a locked design doc.
 
 ## Spacing & radius
-- Spacing (4-pt): xs 4 · sm 8 · md 12 · lg 16 · xl 24 · xxl 32 · xxxl 48. Default card padding 16.
+- Spacing scale: 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 (insure's `space.1`…`space.8`, `MOBILE_DESIGN_BRIEF` §3.3), extended with **96 · 128** for section-level air on tall or sparse screens in other apps. Default card padding 16; tight groupings 8.
+- **The scale is the whole set of legal values.** Never 13, never 27. The steps grow rather than stepping evenly because adjacent values must be distinguishable on screen (see SKILL.md Rule 2).
+- **Inside a group < between groups, with a clear jump.** 8/24, 8/32, 12/32 — not 16/24.
 - Radius: sm 6 · md 12 · lg 16 · xl 24. Cards/sheets ~20; bottom-sheet top corners ~28.
 
 ## Component catalog (recipes)

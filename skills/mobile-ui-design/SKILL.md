@@ -77,6 +77,100 @@ loudest text on the screen the one sentence nobody needs to act on. **A "swap th
 subtitle" request almost always means "fix the reading order", not "invert the hierarchy" — ask
 which one is meant before building it.**
 
+## Rule 2 — spacing is a scale, and the scale is not linear
+
+**Every gap in the UI is a value from the scale. Never 13. Never 27.** This is the single biggest
+lever on how finished a screen looks, and it is a rule, not taste — which is exactly why engineers
+skip it.
+
+The steps are not "every multiple of 4". They grow: **4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 · 96 ·
+128**. The reason they grow is that adjacent values have to be *distinguishable*: 24 against 25 is
+invisible on screen, so a linear scale hands you a hundred choices that all look the same and you
+spend forever making meaningless ones. A scale with gaps means every choice you make is a choice
+someone can see.
+
+**Start with too much air and take it away.** Everyone under-spaces — the engineer reflex is to fit
+more on the screen. Excess space reads as intentional; cramped reads as accidental. If you are
+unsure between two steps, take the larger one first and only come down if it actually looks loose.
+
+**The relationship rule is the whole game.** Space *inside* a group must be clearly smaller than
+space *between* groups. Label 8 from its field, 32 to the next field. This is the numeric form of
+"Proximity assigns membership" above: a layout where the inside gap and the outside gap are both 16
+does not have groups, it has a list. One step of difference is not enough either — 16 inside and 24
+between still reads as a lopsided list. Aim for a clear jump: 8/24, 8/32, 12/32.
+
+**Don't stretch content to the full width just because the width is there.** On a phone this is the
+gutter: body content needs a real margin (16–24), never edge-to-edge text. It becomes a genuine bug
+on tablets, landscape, and foldables — a form that is 100% wide at 900pt is unreadable. Cap the
+content column and centre it. The exception is deliberate and native: full-width primary buttons,
+full-bleed hero imagery, and list-row separators are *supposed* to run the width.
+
+## Rule 3 — typography is a scale too, plus four rules nobody sets
+
+**A constrained, hand-picked scale — pick from the list, never in between.** What matters is that
+the list is short and its steps are distinguishable, not which numbers are on it. insure's is
+32 · 24 · 20 · 17 · 15 · 12 (`references/design-system.md`). If the size you want is not on the
+scale, the answer is the nearest step, not a new step.
+
+**Line height tracks size inversely, and you have to set it.** Small text wants tall lines
+(1.5–1.6); large headings want tight ones (1.1–1.2). A 32pt heading at 1.5 looks broken in a way
+that is very hard to diagnose by eye — you will blame the font. The trap on both platforms is that
+the *default* is a single body-ish value applied to every size, so headings ship too airy and body
+text ships too tight, and nobody ever names it.
+
+- **Compose** — `lineHeight` in `TextStyle` is the *total* line box. `lineHeight = 36.sp` on a
+  32.sp heading is ~1.12.
+- **SwiftUI** — `.lineSpacing()` is **additional** leading, and it is added on top of the font's
+  **own line box**, which is already taller than the point size. So the value to pass is
+  `lineHeight − UIFont.lineHeight`, *not* `lineHeight − fontSize`. That second formula is the
+  intuitive one and it is wrong by exactly the face's built-in leading, on every step. Measured on
+  Roboto Condensed the natural box is **1.172 × size**, so `lineHeight − size` overshot a 13/18
+  step by 2.2pt — it added 5.00 where 2.77 was wanted and rendered 20.2 against a target of 18.
+  Per line that looks like a taste choice; across a paragraph it is plainly loose. Read the metric
+  at runtime (`UIFontMetrics.scaledFont(for:).lineHeight`) rather than hardcoding the subtrahend,
+  so the arithmetic survives a change of face. Passing a ratio (1.5) does almost nothing visible;
+  passing the full line height triple-spaces the paragraph.
+- **Scale both terms, not one.** A fixed leading stays fixed while the face grows, so at 200%
+  Dynamic Type the lines crowd back together and the accessibility setting makes long text *harder*
+  to read. Put the target through `UIFontMetrics.scaledValue(for:)` too.
+- **Pair the face and its leading in one type.** `Font` carries size and weight; leading is a
+  separate `View` modifier. Anything that hands out a bare `Font` hands out half a type style, and
+  the other half is forgotten at every call site. insure's brief had a `lineHeight` column from the
+  start and the app applied **not one value of it** for months, because the helper that would have
+  applied it took `lineSpacing: CGFloat = 0` and nobody ever passed the argument. **An optional
+  parameter defaulting to zero is not a design system** — make the step a value (`InsureTextStyle`)
+  that carries both, so dropping the leading is not expressible.
+
+Set it per scale step, in the type system, not at call sites. A helper that defaults to zero line
+spacing means the app has no line heights at all, however many steps the scale has.
+
+**Line length 45–75 characters.** At body size on a phone this mostly takes care of itself (390pt
+at 15–17pt lands near 40–50 characters), so the rule bites in three specific places instead:
+tablets and landscape, long-form bodies like article and legal text, and large Dynamic Type / font
+scale settings where the layout reflows into a wall. Cap the paragraph column; don't let prose run
+the full width of an iPad.
+
+**One family, several weights.** Five-plus weights of one good face is more cohesive than three
+families. The native corollary is the one that actually bites: **a weight or style exists only if
+the face is really there.** A variable font with a `wght` axis needs the axis instanced explicitly
+or the OS synthesises a smeared fake bold; a family bundled upright-only makes `.italic()` a silent
+no-op that renders emphasis identically to its surroundings. Verify the face before designing
+against it, and treat a synthetic oblique or a fake bold as a stopgap you have written down, not a
+solution.
+
+**Grey text on a coloured background looks dirty.** Neutral grey over an accent or tinted surface
+reads as muddy, because the grey has no relationship to the hue underneath it. Use the background's
+own hue at reduced opacity, or a tint of the background colour. The systemic consequence: a single
+global `textMuted` cannot be correct everywhere — the muted token that reads right on `surface`
+reads dirty on an accent card. Fixed-context surfaces get their own muted pair, alongside the other
+fixed-context exceptions in `references/design-system.md`.
+
+**Sizes go through the scaling unit, never a raw one.** Compose `sp` for text (never `dp`); SwiftUI
+custom fonts through `UIFontMetrics`/Dynamic Type. The web form of this rule is "px or rem, never
+em, because em compounds through nesting"; the native equivalent trap is hardcoded `dp`/fixed-point
+text, which does not compound but ignores the user's accessibility setting — a bad experience and
+an App Store review risk.
+
 ## Honest affordances (states must tell the truth)
 
 - **Real disabled state** — a disabled primary button must look inactive (muted fill + dimmed label), not the full gradient. It must *visibly change* disabled→active when it becomes usable.
@@ -267,7 +361,7 @@ orders the card.
 - Bespoke 3D/illustration assets *are* the look — port them, don't substitute generic icons.
 
 ## Per-screen pre-flight checklist
-1. What's the **one anchor**? 2. Is color an **accent**, not a flood? 3. Cards from the **calm-card** pattern? 4. Type from the **scale**, color from **tokens** (no inline)? 5. **Honest states** (disabled looks disabled; gated on the real precondition)? 6. **Light + dark** both right? 7. Any **web-only effect** that needs a native substitute (flagged)? 8. Does it look **intentional**, not AI-default?
+1. What's the **one anchor**? 2. Is color an **accent**, not a flood? 3. Cards from the **calm-card** pattern? 4. Type from the **scale**, color from **tokens** (no inline)? 5. Is **every gap a scale value**, and is inside-a-group clearly tighter than between-groups? 6. Is **line height set per step** (tight headings, tall body) rather than defaulted? 7. **Honest states** (disabled looks disabled; gated on the real precondition)? 8. **Light + dark** both right? 9. Any **web-only effect** that needs a native substitute (flagged)? 10. Does it look **intentional**, not AI-default?
 
 ## Keeping this skill alive
 This skill is meant to grow. When a new rule, preference, component pattern, or liked design shows up:
