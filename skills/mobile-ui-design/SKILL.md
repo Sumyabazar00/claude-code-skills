@@ -211,6 +211,20 @@ different lightness" ramps look lifeless.
 technical and precise; warm (yellow/red-tinted) reads friendly and human. Pick one direction and
 hold it across the whole grey ramp — a mix of cool and warm greys in one UI reads as a mistake.
 
+**Hold the hue constant on a grey ramp — but let warm chromatic ramps rotate as they darken.** This
+is the exception that looks like sloppiness and is not. A yellow or amber at low lightness is
+*perceived* as olive, not as dark yellow, so an amber ramp that keeps one hue turns khaki at its
+dark end and stops reading as caution at all. Real ramps compensate: Tailwind's amber rotates
+**43° → 22°** across its range, a deliberate 21° swing toward orange. Reds barely need it, greens
+and blues need almost none. Verified the hard way — an amber built on a fixed hue 38 produced a
+khaki "action required" card that was visibly worse than the ad-hoc value it replaced.
+
+**Also: lightness is not luminance.** Two hues at the same HSL lightness have very different
+contrast, so a shared lightness across a semantic ramp's steps is the wrong constraint. Green
+needed L28 to clear 4.5:1 on white where amber cleared it at L39 — forcing amber down to green's
+lightness is what made it dark enough to go khaki in the first place. **Solve each hue's step for
+its own contrast**, then let the lightness land where it lands.
+
 **Colour must never be the only carrier of meaning.** Colour-blind users, greyscale printing, a
 phone in direct sunlight. Pair it with an icon, a label, a weight change, or a shape change. See
 *Honest affordances* below — "change two channels, not one" is this rule applied to state.
