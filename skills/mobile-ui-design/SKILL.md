@@ -171,6 +171,84 @@ em, because em compounds through nesting"; the native equivalent trap is hardcod
 text, which does not compound but ignores the user's accessibility setting — a bad experience and
 an App Store review risk.
 
+## Rule 4 — colour is a system, and the system is a set of ramps
+
+Colour intimidates engineers more than any other part of design, and it shouldn't, because most of
+it is mechanical. What follows is the mechanical part; taste only enters at the base hue.
+
+**Think in HSL, not hex.** `hsl(220, 90%, 56%)` tells you hue, saturation and lightness, and you can
+move one without wrecking the others. `#3B82F6` tells you nothing, so every adjustment is a guess
+followed by a squint. Author and reason in HSL even where the token file stores something else.
+
+- **Compose** has `Color.hsl(h, s, l)` and `Color.hsv(...)` built in.
+- **SwiftUI has no HSL initialiser.** `Color(hue:saturation:brightness:)` is **HSB/HSV** — the third
+  parameter is *brightness*, not lightness, and they are not the same axis. Feeding HSL numbers into
+  it silently produces the wrong colour: HSL 50% lightness at full saturation is the pure hue, while
+  HSB 50% brightness at full saturation is that hue darkened by half. Convert HSL to RGB yourself,
+  or keep the HSL triple in a comment beside the literal so the intent survives.
+- A "keep both platforms diffable by eye" rule is a good reason to store one identical format on
+  both sides. It is **not** a reason for that format to be hex — move both together.
+
+**You need more colours than you think.** Not one blue — nine. A working palette is roughly:
+
+- **8–10 greys.** This is where most of the UI actually lives, and it is the set engineers
+  under-build most.
+- **5–10 shades of the primary.**
+- **5–10 of one or two accents.**
+- **Semantic sets** — red, yellow, green — each a small ramp, not a single value.
+
+**Build a ramp by picking three points and filling in, not by turning a lightness dial.** Choose the
+base (the one you would call "the blue"), then the lightest and the darkest ends, then fill the gaps
+evenly. Mechanically stepping lightness off one hex produces dead, washed-out midtones, because it
+holds saturation constant while lightness moves — which brings us to the rule that fixes it.
+
+**The saturation rule: the further a shade sits from 50% lightness, the more saturation it needs to
+hold the same perceived intensity.** Very light and very dark steps go grey without a bump. This is
+the single most useful number-level fact about colour, and it is why "same hue, same saturation,
+different lightness" ramps look lifeless.
+
+**Never pure grey.** `#808080` is lifeless. Give greys a slight hue: cool (blue-tinted) reads
+technical and precise; warm (yellow/red-tinted) reads friendly and human. Pick one direction and
+hold it across the whole grey ramp — a mix of cool and warm greys in one UI reads as a mistake.
+
+**Colour must never be the only carrier of meaning.** Colour-blind users, greyscale printing, a
+phone in direct sunlight. Pair it with an icon, a label, a weight change, or a shape change. See
+*Honest affordances* below — "change two channels, not one" is this rule applied to state.
+
+### What this looks like when it has gone wrong
+
+Measured on insure's iOS token set (2026-08-31), which is a fair example of a palette built by
+accretion rather than construction. Every one of these was invisible in hex and obvious in HSL:
+
+- **The primary ramp already existed but was never named.** Six distinct purples were in the file —
+  L 87 / 76 / 56 / 52 / 44 / 39 — scattered across two `accent` tokens and the stops of two
+  gradients. Nobody had built a ramp; a ramp had accumulated. **Look for this before designing a new
+  one:** the shades a UI needs tend to get invented at the call sites that need them.
+- **Its gaps were uneven and its saturation non-monotonic.** Lightness gaps ran 11, 20, 4, 8, 5 — a
+  4-point gap is invisible, so two of those "different" shades were the same colour twice — while
+  saturation went 100, 92, 78, 63, **83**, 60, jumping back up in the middle of the ramp.
+- **`accentSoft` was darker and more saturated than `accent` in light mode** (L44/S83 against
+  L52/S63) while being lighter in dark mode (L87 against L76). A token whose name is a lie in one
+  of the two themes.
+- **The greys were correctly tinted** (hue 232–240 throughout, cool) — this part was right — **but
+  under-saturated at the dark end**: L81 carried S17% while L12 carried only S8%, so the darkest
+  step was the most neutral, exactly inverting the saturation rule.
+- **Two semantic tokens were byte-identical in one theme and different in the other** (`danger` and
+  `notif`), which means the palette had not decided whether they are one concept or two.
+
+### The alpha shortcut, and when it stops working
+
+A palette with no ramp gets faked with opacity: one accent at 0.12 for a shadow, 0.18 for a border,
+0.25 for a chip. It is seductive because it is one token, and it is **correct only over a known
+ground** — an alpha-composited colour takes its hue from whatever is behind it. That is why it looks
+fine on the app background and turns muddy the moment the same token lands on an accent card or a
+fixed-white surface. Alpha is a legitimate technique for *one* surface; it is not a substitute for
+named steps, and a token used at three different alphas is three shades wearing one name.
+
+The same mechanism is why dark-mode neutrals built as white-at-alpha work: they inherit the hue of
+the dark ground beneath them. Put one on a fixed-context surface that does not share that ground and
+the inheritance stops, and the neutral goes truly neutral in a UI where nothing else is.
+
 ## Honest affordances (states must tell the truth)
 
 - **Real disabled state** — a disabled primary button must look inactive (muted fill + dimmed label), not the full gradient. It must *visibly change* disabled→active when it becomes usable.
@@ -361,7 +439,7 @@ orders the card.
 - Bespoke 3D/illustration assets *are* the look — port them, don't substitute generic icons.
 
 ## Per-screen pre-flight checklist
-1. What's the **one anchor**? 2. Is color an **accent**, not a flood? 3. Cards from the **calm-card** pattern? 4. Type from the **scale**, color from **tokens** (no inline)? 5. Is **every gap a scale value**, and is inside-a-group clearly tighter than between-groups? 6. Is **line height set per step** (tight headings, tall body) rather than defaulted? 7. **Honest states** (disabled looks disabled; gated on the real precondition)? 8. **Light + dark** both right? 9. Any **web-only effect** that needs a native substitute (flagged)? 10. Does it look **intentional**, not AI-default?
+1. What's the **one anchor**? 2. Is color an **accent**, not a flood? 3. Cards from the **calm-card** pattern? 4. Type from the **scale**, color from **tokens** (no inline)? 5. Is **every gap a scale value**, and is inside-a-group clearly tighter than between-groups? 6. Is **line height set per step** (tight headings, tall body) rather than defaulted? 7. **Honest states** (disabled looks disabled; gated on the real precondition)? 8. **Light + dark** both right? 9. Any **web-only effect** that needs a native substitute (flagged)? 10. Is every shade a **named step on a ramp** rather than one token at three alphas, and does any meaning ride on **colour alone**? 11. Does it look **intentional**, not AI-default?
 
 ## Keeping this skill alive
 This skill is meant to grow. When a new rule, preference, component pattern, or liked design shows up:
