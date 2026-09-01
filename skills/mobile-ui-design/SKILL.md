@@ -263,6 +263,65 @@ The same mechanism is why dark-mode neutrals built as white-at-alpha work: they 
 the dark ground beneath them. Put one on a fixed-context surface that does not share that ground and
 the inheritance stops, and the neutral goes truly neutral in a UI where nothing else is.
 
+## Rule 5 — depth: shadows, borders, and the layer stack
+
+**Shadows encode elevation.** Keep a set of about five, from barely-there to dramatic, and use them
+consistently: small for cards and buttons, medium for dropdowns and popovers, large for modals. The
+size of the shadow tells the user how far off the page the element is. One shadow used everywhere
+tells them nothing — it is decoration, not information.
+
+**Combine two shadows.** Real depth needs an *ambient* shadow (large, soft, low opacity, spread
+wide) plus a *direct* shadow (smaller, tighter, offset downward). One shadow looks fake; two looks
+physical.
+
+**Borders are often the wrong tool.** If you are adding a border to separate two things, ask first
+whether spacing, a background colour shift, or a shadow would do it. **Too many borders is the #1
+visual signature of engineer-built UI** — it is the reflex reach, because a border is the one
+separator that is trivially expressible in code.
+
+**Accent borders add colour cheaply.** A 3–4px coloured border on the top of a card or the left of
+an alert gives you personality without redesigning anything.
+
+**Reduce the shadow on press.** Button pressed = element moves toward the page = smaller shadow.
+Two lines, and it makes the whole thing feel real.
+
+### The nesting trap: a lighter panel on a light card is not a layer
+
+The specific way this goes wrong in a token set. A card sits on the page as `surface`; someone needs
+a panel *inside* it and reaches for the next token along, which is usually named something like
+`surfaceStrong` — and on a light theme that token is **lighter** than the card, often pure white
+against the card's 85%-white. On a near-white page that is a contrast of almost nothing, so the
+nested panel does not read as nested; it does not read at all. Measured on one real set: light
+`surface` = white @ 85%, `surfaceStrong` = pure white; dark was 4% white against 6% white.
+
+**Layers go one way: content nests *downward*, not upward.** An inset panel is *recessed* — a step
+**darker** than its parent in light mode (and darker in dark mode too, since the parent is already a
+lightening of the ground). An element that floats *above* the card earns a shadow, not a lighter
+fill. Reaching for the lighter token is the reflex because "more important = brighter", and it
+inverts the physical model the whole system is built on.
+
+The tell that you are in this trap: you find yourself adding a **border** to make a nested panel
+visible. That border is a workaround for a fill that is not doing its job, and it lands you straight
+in the "too many borders" signature above.
+
+### A card is a card everywhere, or it is not a system
+
+Full-bleed artwork tiles are the usual place a card family quietly breaks. The image goes to the
+corners, so the surface, the hairline and the lift all look redundant while you are building it —
+and the tile ships as a bare rounded image. Then it sits next to real cards and reads as a stray
+graphic that someone forgot to finish, which is exactly what a user reports as *"those look like
+just images."*
+
+An image tile still gets the card's chrome, and for reasons that survive the artwork changing:
+
+- **Transparent PNGs.** An illustration with no background is a floating cut-out on a bare tile; on
+  a surface with an edge it is a card with a picture on it.
+- **Artwork lighter than the page.** A pale image with no lift has no boundary at all.
+- **Any admin-uploaded asset**, which is every size, format and background you did not choose.
+
+If the artwork genuinely must run to the corners, it still needs the *lift* even where it does not
+need the fill — the shadow is what states "this is an object on the page."
+
 ## Honest affordances (states must tell the truth)
 
 - **Real disabled state** — a disabled primary button must look inactive (muted fill + dimmed label), not the full gradient. It must *visibly change* disabled→active when it becomes usable.
@@ -453,7 +512,7 @@ orders the card.
 - Bespoke 3D/illustration assets *are* the look — port them, don't substitute generic icons.
 
 ## Per-screen pre-flight checklist
-1. What's the **one anchor**? 2. Is color an **accent**, not a flood? 3. Cards from the **calm-card** pattern? 4. Type from the **scale**, color from **tokens** (no inline)? 5. Is **every gap a scale value**, and is inside-a-group clearly tighter than between-groups? 6. Is **line height set per step** (tight headings, tall body) rather than defaulted? 7. **Honest states** (disabled looks disabled; gated on the real precondition)? 8. **Light + dark** both right? 9. Any **web-only effect** that needs a native substitute (flagged)? 10. Is every shade a **named step on a ramp** rather than one token at three alphas, and does any meaning ride on **colour alone**? 11. Does it look **intentional**, not AI-default?
+1. What's the **one anchor**? 2. Is color an **accent**, not a flood? 3. Cards from the **calm-card** pattern? 4. Type from the **scale**, color from **tokens** (no inline)? 5. Is **every gap a scale value**, and is inside-a-group clearly tighter than between-groups? 6. Is **line height set per step** (tight headings, tall body) rather than defaulted? 7. **Honest states** (disabled looks disabled; gated on the real precondition)? 8. **Light + dark** both right? 9. Any **web-only effect** that needs a native substitute (flagged)? 10. Is every shade a **named step on a ramp** rather than one token at three alphas, and does any meaning ride on **colour alone**? 11. Is every shadow a **named elevation step**, is depth carried by fill and shadow rather than by another **border**, and does any nested panel go *darker* than its parent rather than lighter? 12. Does it look **intentional**, not AI-default?
 
 ## Keeping this skill alive
 This skill is meant to grow. When a new rule, preference, component pattern, or liked design shows up:
