@@ -12,6 +12,7 @@ A skill is a folder with a `SKILL.md` — YAML frontmatter (`name`, `description
 | [`mobile-ui-design`](skills/mobile-ui-design) | The native-mobile counterpart. Android Jetpack Compose now, SwiftUI later — the "calm card", honest affordance states, and the native substitutes for web-only effects. |
 | [`ui-implement`](skills/ui-implement) | Builds UI *inside an existing product* so it matches the established aesthetic and covers every real-world state (loading, empty, error, overflow, permission). The opposite of greenfield design work. |
 | [`presentation-maker`](skills/presentation-maker) | Generates project presentations — pitch decks, system introductions, investor decks — as HTML with optional PPTX export. |
+| [`wrap-up`](skills/wrap-up) | End-of-session capture. Saves what a session learned to memory and updates the affected docs, the status log and the work tracker in every repo it touched, so the next session (on any machine) starts from it. Not a commit command. |
 | [`insurance-preview`](skills/insurance-preview) | Turns insurance product risk/coverage documents (.docx, HTML tables) into self-contained, responsive card-based HTML previews. No JavaScript — pure `<details>`/`<summary>`, so it renders inside a sandboxed iframe. |
 
 ## Install
