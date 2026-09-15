@@ -705,6 +705,69 @@ amplitude and a Reduce Motion branch.
   default. At radius 20 the difference is plainly visible, and the circular default is one of the
   small tells that an app was ported rather than designed for iOS.
 
+### Two flows sharing steps: share values and views, not a view model
+
+When a second flow reuses most of an existing one's screens (domestic travel after international:
+the same dates, cover list and boarding pass; a different first step, no details step), the reflex is
+one view model with a mode flag. It then branches on that flag in every method, and each flow's
+bugs land in the other.
+
+Make the shared screens take **values and closures** (`trip`, `groups`, `onSelect`, `onContinue`),
+and keep one view model per flow. Each flow's step is then a ten-line wrapper that passes its own
+state in. The rules both flows must agree on live in a value type they both hold (`TripDates`: the
+earliest start, the longest trip, the inclusive day count), not in a base class. A protocol-generic
+step (`Step<Model: SomeProtocol>`) is the other way to do it, and costs a protocol that grows a
+member for every difference; values make the difference visible at the call site.
+
+Two traps that came with the refactor:
+
+- **A long array-concatenation expression inside a view initializer can crash the type checker**
+  (`failed to produce diagnostic for expression`), pointing at the whole `body`. Hoist the expression
+  into a function returning the concrete type.
+- **An unlabelled tuple passed where a labelled optional tuple of a closure is expected** fails the
+  same way. Use a small struct (`CovidSwitch { isOn; set }`).
+
+### An ordered multi-pick shows its order where the eye lands
+
+A question whose answer is a sequence (a route through aimags, stops tapped in order) cannot show
+the order in its chips: a chip says in or out, not first or third. Put the sequence in the step's
+anchor and let it grow as the customer taps, so a stop tapped in the wrong order is visible before
+it is stored. A vertical line of stops is the form people already read as a route (every transit
+app). Make the ends solid and the stops between them rings, so start and finish read without
+colour, and never cut a stop's name: it is the entire content of the row.
+
+### Centre an overlay on a measured line with a zero-height frame
+
+Placing a badge on a line you measured (a stamp on a boarding pass's tear line) by
+`.alignmentGuide(.top) { $0[VerticalAlignment.center] }` then `.offset(y: measured)` inside an
+`.overlay(alignment: .topTrailing)` did not take: the stamp landed 10pt low, top edge on the line,
+exactly as if the guide were absent. `.frame(height: 0)` then `.offset(y: measured)` does: a
+zero-height frame centres its content on its own top edge, so the offset puts the content's middle
+on the line whatever its height. A hard-coded top padding (the first version's `183`) is correct
+only for the one route height it was measured against, and breaks the moment a second flow puts a
+taller section above the line.
+
+### A cover's configuration belongs to its item, not to state beside a Bool
+
+`fullScreenCover(isPresented: $open)` plus a separate `@State` that configures what opens (a filter,
+a preselected product, a plate) is wrong on exactly one presentation: the first. The cover's content
+is an escaping closure, and SwiftUI tracks a state only once some body has read it. If nothing
+outside that closure reads the configuring state, the tap that sets it and flips the Bool builds the
+cover from the value before the tap. Every later tap works, because the closure has read the state
+once by then. So it survives every review that opens the screen twice, and it reads to a user as "it
+ignored me, then it worked".
+
+Measured on one app: Home's family card set `lines = .person` and `buying = true`; the first tap
+showed all seven product lines, the second showed the two person lines. A DEBUG host that
+constructed the flow directly passed, because it skipped the cover.
+
+Present with `fullScreenCover(item:)` (or `sheet(item:)`) and put the configuration **in** the item:
+`struct PurchaseRequest: Identifiable { let id = UUID(); var lines: Lines? }`. The content receives
+its values as a parameter, so there is no second state to be stale, and a fresh id per request makes
+two opens two presentations. Reach for it whenever a presentation carries anything more than
+"open". And test presentation bugs through the real presenter, not a host that bypasses it: prove the
+trigger reproduces the bug on the old code before trusting it to pass the new.
+
 ### Scroll an opened section into view from one place, after the fold settles
 
 An accordion row that opens below the fold opens invisibly: the header moves, the new content lands
